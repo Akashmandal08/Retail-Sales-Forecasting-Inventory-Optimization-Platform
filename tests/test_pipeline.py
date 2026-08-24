@@ -103,17 +103,15 @@ class TestRetailSalesForecastingPipeline(unittest.TestCase):
         """
         summary = self.sim_results['summary']
         stockout_red = summary['overall_stockout_reduction_pct']
-        overstock_red = summary['overall_overstock_reduction_pct']
-        cost_savings = summary['total_holding_cost_savings']
+        cost_savings = summary['net_supply_chain_cost_savings']
 
         print(f"\n  Genuine Inventory Simulation Results:")
         print(f"    - Stockout Units Reduction: {stockout_red}%")
-        print(f"    - Overstock Units Reduction: {overstock_red}%")
         print(f"    - Total Supply Chain Cost Savings: ${cost_savings:,.2f}")
 
+        self.assertGreaterEqual(stockout_red, 15.0, f"Stockout reduction target >=15% not met. Got {stockout_red}%")
+        self.assertGreater(cost_savings, 0.0, "Total supply chain cost savings must be positive")
         self.assertIsInstance(self.sim_results['cost_matrix'], pd.DataFrame)
-        self.assertIn('overall_stockout_reduction_pct', summary)
-        self.assertIn('overall_overstock_reduction_pct', summary)
         print("[OK] Test 4 Passed: Genuine Inventory Optimization Verified.")
 
 if __name__ == "__main__":

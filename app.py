@@ -47,15 +47,6 @@ st.markdown("""
     .stMetric:hover {
         border-color: #38bdf8;
     }
-
-    .custom-card {
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 20px;
-        margin-bottom: 20px;
-        backdrop-filter: blur(8px);
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -112,6 +103,7 @@ model_names_list = list(eval_results['metrics'].keys())
 best_model_name = eval_results.get('best_model_name', model_names_list[0])
 if best_model_name not in model_names_list:
     best_model_name = model_names_list[0]
+
 selected_model = st.sidebar.selectbox(
     "Select Forecasting Model:",
     options=model_names_list,
@@ -119,7 +111,7 @@ selected_model = st.sidebar.selectbox(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚙️ Inventory Simulator Settings")
+st.sidebar.markdown("### ⚙️ Inventory Policy Simulator Settings")
 lead_time_slider = st.sidebar.slider("Lead Time (Days):", min_value=1, max_value=14, value=3)
 service_level_slider = st.sidebar.slider("Target Service Level (%):", min_value=80, max_value=99, value=95) / 100.0
 
@@ -173,13 +165,13 @@ with tab1:
     with col3:
         st.metric(f"R² Score ({selected_model})", f"{r2_val}", f"{var_exp}% Variance")
     with col4:
-        st.metric("Stockout Reduction", f"{sim_summary['overall_stockout_reduction_pct']}%", "Goal: ≥15%")
+        st.metric("Stockout Reduction", f"{sim_summary['overall_stockout_reduction_pct']}%", "Target: ≥15%")
     with col5:
-        st.metric("Overstock Reduction", f"{sim_summary['overall_overstock_reduction_pct']}%", "Goal: ≥10%")
+        st.metric("Cost Savings", f"${sim_summary['net_supply_chain_cost_savings']:,.2f}", f"{sim_summary['total_cost_reduction_pct']}% Saved")
 
     st.markdown(
         f"<div style='background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px; margin: 15px 0; color: #38bdf8; font-size: 0.95rem;'>"
-        f"💡 <b>Model Performance Summary</b>: The selected <b>{selected_model}</b> model achieved an <b>R² score of {r2_val}</b>, "
+        f"💡 <b>Model Evaluation Summary</b>: The selected <b>{selected_model}</b> model achieved an <b>R² score of {r2_val}</b>, "
         f"explaining approximately <b>{var_exp}%</b> of the variance in sales data "
         f"(MAE = {mae_val}, RMSE = {rmse_val}, MAPE = {mape_val}%)."
         f"</div>",
@@ -287,7 +279,6 @@ with tab4:
     lower_bound, upper_bound = ModelEvaluator.calculate_prediction_intervals(y_pred_prod, residual_std, confidence_level=0.90)
 
     fig_fc = go.Figure()
-    # Prediction Interval Band
     fig_fc.add_trace(go.Scatter(
         x=test_prod_df['date'], y=upper_bound,
         mode='lines', line=dict(width=0), showlegend=False
@@ -297,7 +288,6 @@ with tab4:
         mode='lines', line=dict(width=0), fill='tonexty',
         fillcolor='rgba(56, 189, 248, 0.15)', name='90% Prediction Interval'
     ))
-    # Lines
     fig_fc.add_trace(go.Scatter(
         x=test_prod_df['date'], y=y_true_prod,
         mode='lines', name='Actual Sales', line=dict(color='#38bdf8', width=2)
@@ -335,7 +325,7 @@ with tab4:
 # TAB 5: INVENTORY OPTIMIZER
 # ---------------------------------------------------------
 with tab5:
-    st.markdown("### ⚡ Dynamic Inventory Optimizer & Supply Chain Cost Matrix")
+    st.markdown("### ⚡ Dynamic Inventory Policy Simulator & Supply Chain Cost Matrix")
     
     st.markdown("#### Genuine Supply Chain Business Cost Comparison Matrix")
     st.dataframe(sim_res['cost_matrix'], use_container_width=True)

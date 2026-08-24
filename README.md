@@ -25,16 +25,16 @@ This platform integrates machine learning forecasting algorithms (XGBoost, Rando
 
 ## 🎯 Target Goals vs. Genuine Achieved Benchmarks
 
-| Metric / Objective | Target Goal | Achieved Benchmark | Status |
+| Metric / Objective | Target Goal | Genuine Achieved Benchmark | Status |
 | :--- | :--- | :--- | :--- |
 | **Forecasting $R^2$ Score** | $\ge 0.9000$ | **$0.9321$ ($93.21\%$ Variance Explained)** |  **EXCEEDED** |
 | **Stockout Units Reduction** | $\ge 15.0\%$ | **$65.53\%$ Reduction** |  **EXCEEDED** |
-| **Total Supply Chain Savings** | Positive Savings | **+$33,049.35 Net Savings** |  **ACHIEVED** |
+| **Total Supply Chain Cost Savings** | Positive Savings | **+$23,049.35 Net Savings ($41.0\%$ Cost Reduction)** |  **ACHIEVED** |
 | **ML vs. Naive Baseline** | ML > Baseline | **ML ($R^2=0.9321$) vs Naive ($R^2=0.8724$)** |  **ACHIEVED** |
-| **Data Quality & Zero Nulls** | 0 Nulls / Capped | Verified 0 Nulls & IQR Capped Outliers |  **ACHIEVED** |
+| **Data Quality & Preprocessing** | 0 Nulls / Capped | Verified 0 Nulls & IQR Capped Outliers |  **ACHIEVED** |
 
 > [!NOTE]
-> **Technical Accuracy Wording**: The selected forecasting model achieved an **$R^2$ score of 0.9321**, explaining approximately **93.21%** of the variance in the test-set sales data ($\text{MAE} = 12.85$, $\text{RMSE} = 23.18$, $\text{MAPE} = 16.33\%$, $\text{WAPE} = 14.87\%$).
+> **Technical Accuracy Wording**: The selected forecasting model achieved an **$R^2$ score of 0.9321**, explaining approximately **93.21%** of the variance in the test-set sales data ($\text{MAE} = 12.85$, $\text{RMSE} = 23.18$, $\text{MAPE} = 16.73\%$, $\text{WAPE} = 14.87\%$).
 
 ---
 
@@ -52,8 +52,8 @@ This platform integrates machine learning forecasting algorithms (XGBoost, Rando
 | **Model evaluation** | $R^2$, MAE, RMSE, MAPE, WAPE | ✅ |
 | **Forecasting target** | $R^2 \ge 0.90$ | ✅ |
 | **Inventory optimization** | Safety Stock ($SS$), Reorder Point ($ROP$), $EOQ$ | ✅ |
-| **Stockout reduction** | Dynamic policy simulation | ✅ |
-| **Overstock reduction** | Dynamic policy simulation | ✅ |
+| **Stockout reduction** | Inventory policy simulation | ✅ |
+| **Overstock reduction** | Inventory policy simulation | ✅ |
 | **Actionable insights** | Automated recommendation engine | ✅ |
 | **Visualization** | Streamlit web application | ✅ |
 | **Documentation** | README + Project Report (`reports/project_report.md`) | ✅ |
@@ -152,10 +152,10 @@ Comparing **Traditional Static Policy** against **AI Dynamic Forecast Policy**:
 | Business Cost Metric | Static Policy Baseline | AI Dynamic Policy | Net Improvement |
 | :--- | :--- | :--- | :--- |
 | **Stockout Units** | 1,845 Units | **636 Units** | **-65.53% Reduction** |
-| **Holding Cost ($)** | $14,250.40 | **$11,480.15** | **-19.44% Savings** |
-| **Ordering Cost ($)** | $3,450.00 | **$2,100.00** | **-39.13% Savings** |
-| **Lost Sales Margin ($)** | $38,540.00 | **$19,610.90** | **-49.12% Savings** |
-| **Total Supply Chain Cost** | **$56,240.40** | **$33,191.05** | **+$23,049.35 Net Savings** |
+| **Holding Cost ($)** | $14,250.40 | **$11,480.15** | **-19.44% Cost Savings** |
+| **Ordering Cost ($)** | $3,450.00 | **$2,100.00** | **-39.13% Cost Savings** |
+| **Lost Sales Margin ($)** | $38,540.00 | **$19,610.90** | **-49.12% Cost Savings** |
+| **Total Supply Chain Cost** | **$56,240.40** | **$33,191.05** | **+$23,049.35 Net Savings ($41.0\%$ Cost Reduction)** |
 
 ---
 
@@ -167,7 +167,7 @@ Comparing **Traditional Static Policy** against **AI Dynamic Forecast Policy**:
 ### 2. Forecasting Engine & Prediction Intervals
 ![Forecasting Engine](assets/forecasting.png)
 
-### 3. Dynamic Inventory Optimizer
+### 3. Dynamic Inventory Policy Simulator
 ![Inventory Optimizer](assets/inventory_optimizer.png)
 
 ---

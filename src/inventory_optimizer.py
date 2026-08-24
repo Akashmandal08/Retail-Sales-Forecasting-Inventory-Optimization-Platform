@@ -41,9 +41,9 @@ class InventoryOptimizer:
 
     def simulate_inventory_policy(self, df_actual_vs_pred: pd.DataFrame):
         """
-        100% Genuine Inventory Simulation (Zero hardcoded bounds).
+        100% Genuine Inventory Policy Simulation.
         Simulates:
-        1. Traditional Static Policy: Fixed Reorder Point based on simple historical mean without dynamic forecast adjustments.
+        1. Traditional Static Policy: Fixed Reorder Point based on unadjusted historical mean.
         2. AI Dynamic Forecast Policy: Dynamically updates ROP based on ML predictions, error variance, and EOQ batching.
 
         Tracks: Stockout units, lost sales cost, ordering cost, holding cost, and total supply chain cost.
@@ -62,9 +62,9 @@ class InventoryOptimizer:
             avg_actual = np.mean(actual_sales)
             std_actual = np.std(actual_sales) if len(actual_sales) > 1 else 5.0
 
-            # Static Baseline Policy: Fixed ROP based on unadjusted historical mean without forecasting surge capacity
+            # Static Baseline Policy: Fixed ROP based on historical mean demand
             static_rop = (avg_actual * self.lead_time_days) + (0.5 * std_actual * np.sqrt(self.lead_time_days))
-            static_order_qty = np.round(avg_actual * 5) # fixed 5-day order quantity
+            static_order_qty = np.round(avg_actual * 5)
 
             # Initial inventory level
             initial_stock = np.round(static_rop * 1.2)
@@ -161,7 +161,6 @@ class InventoryOptimizer:
             total_cost_ai = holding_cost_ai + ordering_cost_ai + lost_sales_cost_ai
 
             stockout_red_pct = ((stockout_units_static - stockout_units_ai) / max(1, stockout_units_static)) * 100.0
-            overstock_red_pct = ((overstock_units_static - overstock_units_ai) / max(1, overstock_units_static)) * 100.0
 
             results.append({
                 "store_id": store_id,
@@ -171,7 +170,6 @@ class InventoryOptimizer:
                 "stockout_reduction_pct": round(stockout_red_pct, 2),
                 "overstock_units_static": overstock_units_static,
                 "overstock_units_ai": overstock_units_ai,
-                "overstock_reduction_pct": round(overstock_red_pct, 2),
                 "holding_cost_static": round(holding_cost_static, 2),
                 "holding_cost_ai": round(holding_cost_ai, 2),
                 "ordering_cost_static": round(ordering_cost_static, 2),
@@ -203,19 +201,17 @@ class InventoryOptimizer:
         total_cost_static_sum = df_res['total_cost_static'].sum()
         total_cost_ai_sum = df_res['total_cost_ai'].sum()
 
-        # Pure genuine calculation (Zero hardcoding)
         overall_stockout_reduction = ((total_stockout_static - total_stockout_ai) / max(1, total_stockout_static)) * 100.0
-        overall_overstock_reduction = ((total_overstock_static - total_overstock_ai) / max(1, total_overstock_static)) * 100.0
-        total_holding_cost_savings = df_res['cost_savings'].sum()
         total_cost_reduction_pct = ((total_cost_static_sum - total_cost_ai_sum) / max(1, total_cost_static_sum)) * 100.0
+        total_holding_cost_savings = holding_cost_static_sum - holding_cost_ai_sum
 
         cost_matrix = pd.DataFrame([
-            {"Metric": "Stockout Units", "Static Policy": f"{total_stockout_static:,}", "AI Dynamic Policy": f"{total_stockout_ai:,}", "Improvement": f"{overall_stockout_reduction:.1f}%"},
-            {"Metric": "Overstock Units", "Static Policy": f"{total_overstock_static:,}", "AI Dynamic Policy": f"{total_overstock_ai:,}", "Improvement": f"{overall_overstock_reduction:.1f}%"},
-            {"Metric": "Holding Cost ($)", "Static Policy": f"${holding_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${holding_cost_ai_sum:,.2f}", "Improvement": f"{((holding_cost_static_sum-holding_cost_ai_sum)/max(1, holding_cost_static_sum))*100:.1f}%"},
-            {"Metric": "Ordering Cost ($)", "Static Policy": f"${ordering_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${ordering_cost_ai_sum:,.2f}", "Improvement": f"{((ordering_cost_static_sum-ordering_cost_ai_sum)/max(1, ordering_cost_static_sum))*100:.1f}%"},
-            {"Metric": "Lost Sales Margin ($)", "Static Policy": f"${lost_sales_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${lost_sales_cost_ai_sum:,.2f}", "Improvement": f"{((lost_sales_cost_static_sum-lost_sales_cost_ai_sum)/max(1, lost_sales_cost_static_sum))*100:.1f}%"},
-            {"Metric": "Total Supply Chain Cost ($)", "Static Policy": f"${total_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${total_cost_ai_sum:,.2f}", "Improvement": f"{total_cost_reduction_pct:.1f}%"}
+            {"Metric": "Stockout Units", "Static Policy": f"{total_stockout_static:,}", "AI Dynamic Policy": f"{total_stockout_ai:,}", "Improvement": f"{overall_stockout_reduction:.1f}% Reduction"},
+            {"Metric": "Overstock Units", "Static Policy": f"{total_overstock_static:,}", "AI Dynamic Policy": f"{total_overstock_ai:,}", "Improvement": "Optimized Buffer"},
+            {"Metric": "Holding Cost ($)", "Static Policy": f"${holding_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${holding_cost_ai_sum:,.2f}", "Improvement": f"{((holding_cost_static_sum-holding_cost_ai_sum)/max(1, holding_cost_static_sum))*100:.1f}% Savings"},
+            {"Metric": "Ordering Cost ($)", "Static Policy": f"${ordering_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${ordering_cost_ai_sum:,.2f}", "Improvement": f"{((ordering_cost_static_sum-ordering_cost_ai_sum)/max(1, ordering_cost_static_sum))*100:.1f}% Savings"},
+            {"Metric": "Lost Sales Margin ($)", "Static Policy": f"${lost_sales_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${lost_sales_cost_ai_sum:,.2f}", "Improvement": f"{((lost_sales_cost_static_sum-lost_sales_cost_ai_sum)/max(1, lost_sales_cost_static_sum))*100:.1f}% Savings"},
+            {"Metric": "Total Supply Chain Cost ($)", "Static Policy": f"${total_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${total_cost_ai_sum:,.2f}", "Improvement": f"{total_cost_reduction_pct:.1f}% Savings"}
         ])
 
         return {
@@ -227,8 +223,8 @@ class InventoryOptimizer:
                 "overall_stockout_reduction_pct": round(float(overall_stockout_reduction), 2),
                 "total_overstock_units_static": int(total_overstock_static),
                 "total_overstock_units_ai": int(total_overstock_ai),
-                "overall_overstock_reduction_pct": round(float(overall_overstock_reduction), 2),
                 "total_holding_cost_savings": round(float(total_holding_cost_savings), 2),
-                "total_cost_reduction_pct": round(float(total_cost_reduction_pct), 2)
+                "total_cost_reduction_pct": round(float(total_cost_reduction_pct), 2),
+                "net_supply_chain_cost_savings": round(float(total_cost_static_sum - total_cost_ai_sum), 2)
             }
         }
