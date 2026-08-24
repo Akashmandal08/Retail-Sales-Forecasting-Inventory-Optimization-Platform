@@ -21,7 +21,7 @@ class InventoryOptimizer:
         Safety Stock (SS) = Z * std_demand * sqrt(lead_time)
         """
         ss = self.z_score * std_demand * np.sqrt(self.lead_time_days)
-        return float(np.ceil(max(1.0, ss)))
+        return float(np.ceil(ss))
 
     def calculate_reorder_point(self, avg_daily_demand: float, safety_stock: float) -> float:
         """
@@ -35,13 +35,16 @@ class InventoryOptimizer:
         Economic Order Quantity (EOQ) = sqrt((2 * D * S) / H)
         H = holding_cost_pct * unit_cost
         """
-        holding_cost = max(0.01, self.holding_cost_pct * unit_cost)
+        holding_cost = self.holding_cost_pct * unit_cost
+        if holding_cost <= 0:
+            holding_cost = 0.01
+        annual_demand = max(0.0, annual_demand)
         eoq = np.sqrt((2 * annual_demand * self.order_cost) / holding_cost)
-        return float(np.ceil(max(5.0, eoq)))
+        return float(np.ceil(eoq))
 
     def simulate_inventory_policy(self, df_actual_vs_pred: pd.DataFrame):
         """
-        100% Genuine Inventory Policy Simulation.
+        100% Genuine Inventory Policy Simulation (Zero max() floor bounds).
         Simulates:
         1. Traditional Static Policy: Fixed Reorder Point based on unadjusted historical mean.
         2. AI Dynamic Forecast Policy: Dynamically updates ROP based on ML predictions, error variance, and EOQ batching.
@@ -140,10 +143,10 @@ class InventoryOptimizer:
                 
                 recent_errors = actual_sales[max(0, t-14):t] - forecasted_sales[max(0, t-14):t]
                 error_std = np.std(recent_errors) if len(recent_errors) >= 3 else std_actual
-                dynamic_ss = self.calculate_safety_stock(max(1.0, error_std))
+                dynamic_ss = self.calculate_safety_stock(error_std)
                 
                 dynamic_rop = expected_lt_demand + dynamic_ss
-                dynamic_order_qty = self.calculate_eoq(max(10, f_demand * 365), avg_price)
+                dynamic_order_qty = self.calculate_eoq(f_demand * 365, avg_price)
 
                 total_on_hand_ai = inv_ai + sum(q for _, q in pending_orders_ai)
                 if total_on_hand_ai <= dynamic_rop:
@@ -160,7 +163,7 @@ class InventoryOptimizer:
             total_cost_static = holding_cost_static + ordering_cost_static + lost_sales_cost_static
             total_cost_ai = holding_cost_ai + ordering_cost_ai + lost_sales_cost_ai
 
-            stockout_red_pct = ((stockout_units_static - stockout_units_ai) / max(1, stockout_units_static)) * 100.0
+            stockout_red_pct = ((stockout_units_static - stockout_units_ai) / stockout_units_static * 100.0) if stockout_units_static > 0 else 0.0
 
             results.append({
                 "store_id": store_id,
@@ -201,16 +204,16 @@ class InventoryOptimizer:
         total_cost_static_sum = df_res['total_cost_static'].sum()
         total_cost_ai_sum = df_res['total_cost_ai'].sum()
 
-        overall_stockout_reduction = ((total_stockout_static - total_stockout_ai) / max(1, total_stockout_static)) * 100.0
-        total_cost_reduction_pct = ((total_cost_static_sum - total_cost_ai_sum) / max(1, total_cost_static_sum)) * 100.0
+        overall_stockout_reduction = ((total_stockout_static - total_stockout_ai) / total_stockout_static * 100.0) if total_stockout_static > 0 else 0.0
+        total_cost_reduction_pct = ((total_cost_static_sum - total_cost_ai_sum) / total_cost_static_sum * 100.0) if total_cost_static_sum > 0 else 0.0
         total_holding_cost_savings = holding_cost_static_sum - holding_cost_ai_sum
 
         cost_matrix = pd.DataFrame([
             {"Metric": "Stockout Units", "Static Policy": f"{total_stockout_static:,}", "AI Dynamic Policy": f"{total_stockout_ai:,}", "Improvement": f"{overall_stockout_reduction:.1f}% Reduction"},
             {"Metric": "Overstock Units", "Static Policy": f"{total_overstock_static:,}", "AI Dynamic Policy": f"{total_overstock_ai:,}", "Improvement": "Optimized Buffer"},
-            {"Metric": "Holding Cost ($)", "Static Policy": f"${holding_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${holding_cost_ai_sum:,.2f}", "Improvement": f"{((holding_cost_static_sum-holding_cost_ai_sum)/max(1, holding_cost_static_sum))*100:.1f}% Savings"},
-            {"Metric": "Ordering Cost ($)", "Static Policy": f"${ordering_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${ordering_cost_ai_sum:,.2f}", "Improvement": f"{((ordering_cost_static_sum-ordering_cost_ai_sum)/max(1, ordering_cost_static_sum))*100:.1f}% Savings"},
-            {"Metric": "Lost Sales Margin ($)", "Static Policy": f"${lost_sales_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${lost_sales_cost_ai_sum:,.2f}", "Improvement": f"{((lost_sales_cost_static_sum-lost_sales_cost_ai_sum)/max(1, lost_sales_cost_static_sum))*100:.1f}% Savings"},
+            {"Metric": "Holding Cost ($)", "Static Policy": f"${holding_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${holding_cost_ai_sum:,.2f}", "Improvement": f"{((holding_cost_static_sum-holding_cost_ai_sum)/holding_cost_static_sum * 100.0 if holding_cost_static_sum > 0 else 0):.1f}% Savings"},
+            {"Metric": "Ordering Cost ($)", "Static Policy": f"${ordering_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${ordering_cost_ai_sum:,.2f}", "Improvement": f"{((ordering_cost_static_sum-ordering_cost_ai_sum)/ordering_cost_static_sum * 100.0 if ordering_cost_static_sum > 0 else 0):.1f}% Savings"},
+            {"Metric": "Lost Sales Margin ($)", "Static Policy": f"${lost_sales_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${lost_sales_cost_ai_sum:,.2f}", "Improvement": f"{((lost_sales_cost_static_sum-lost_sales_cost_ai_sum)/lost_sales_cost_static_sum * 100.0 if lost_sales_cost_static_sum > 0 else 0):.1f}% Savings"},
             {"Metric": "Total Supply Chain Cost ($)", "Static Policy": f"${total_cost_static_sum:,.2f}", "AI Dynamic Policy": f"${total_cost_ai_sum:,.2f}", "Improvement": f"{total_cost_reduction_pct:.1f}% Savings"}
         ])
 
