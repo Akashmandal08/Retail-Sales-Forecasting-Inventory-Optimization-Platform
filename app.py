@@ -109,7 +109,9 @@ selected_category = st.sidebar.selectbox(
 )
 
 model_names_list = list(eval_results['metrics'].keys())
-best_model_name = eval_results['best_model_name']
+best_model_name = eval_results.get('best_model_name', model_names_list[0])
+if best_model_name not in model_names_list:
+    best_model_name = model_names_list[0]
 selected_model = st.sidebar.selectbox(
     "Select Forecasting Model:",
     options=model_names_list,
